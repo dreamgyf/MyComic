@@ -139,7 +139,8 @@ public class ComicItemActivity extends AppCompatActivity {
                                             @Override
                                             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                                                 Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
-                                                intent.putExtra("section",tab.getSections().get(i));
+                                                intent.putExtra("comicTab",tab);
+                                                intent.putExtra("position",i);
                                                 startActivity(intent);
                                             }
                                         });

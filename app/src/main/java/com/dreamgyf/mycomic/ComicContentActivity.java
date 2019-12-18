@@ -22,7 +22,10 @@ import android.widget.Toast;
 import com.dreamgyf.mycomic.adapter.ComicContentViewPagerAdapter;
 import com.dreamgyf.mycomic.adapter.SectionGridViewAdapter;
 import com.dreamgyf.mycomic.entity.ComicContent;
+import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.entity.Section;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -47,15 +50,19 @@ public class ComicContentActivity extends AppCompatActivity {
 
     private Handler handler = new Handler();
 
+    private ComicTab comicTab;
+
     private Section section;
 
-    private List<ComicContent> comicContentList;
+    private int position;
 
-    private List<Bitmap> bitmapList = new ArrayList<>();
+    private List<ComicContent> comicContentList;
 
     private ViewPager viewPager;
 
     private List<View> viewList = new ArrayList<>();
+
+    private BottomSheetDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,10 +71,12 @@ public class ComicContentActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,  WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_comic_content);
 
-        section = (Section) getIntent().getSerializableExtra("section");
-
+        comicTab = (ComicTab) getIntent().getSerializableExtra("comicTab");
+        position = getIntent().getIntExtra("position",-1);
+        section = position == -1 ? null : comicTab.getSections().get(position);
         viewPager = findViewById(R.id.viewpager);
 
+        initBottomDialog();
         //获取数据
         new Thread(new Runnable() {
             @Override
@@ -114,6 +123,12 @@ public class ComicContentActivity extends AppCompatActivity {
                         public void run() {
                             for(ComicContent comicContent : comicContentList){
                                 View view = LayoutInflater.from(ComicContentActivity.this).inflate(R.layout.viewpager_content,null);
+                                view.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        dialog.show();
+                                    }
+                                });
                                 viewList.add(view);
                             }
                             viewPager.setAdapter(new ComicContentViewPagerAdapter(viewList));
@@ -148,5 +163,12 @@ public class ComicContentActivity extends AppCompatActivity {
                 }
             }
         }).start();
+    }
+
+    void initBottomDialog(){
+        dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_content,null);
+        dialog.setContentView(view);
+        ((View) view.getParent()).getBackground().setAlpha(100);
     }
 }
