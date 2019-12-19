@@ -6,17 +6,21 @@ import androidx.viewpager.widget.ViewPager;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Base64;
 import android.util.JsonReader;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dreamgyf.mycomic.adapter.ComicContentViewPagerAdapter;
@@ -64,6 +68,8 @@ public class ComicContentActivity extends AppCompatActivity {
 
     private BottomSheetDialog dialog;
 
+    private SeekBar seekBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,7 +84,7 @@ public class ComicContentActivity extends AppCompatActivity {
 
         initBottomDialog();
         //获取数据
-        new Thread(new Runnable() {
+        Runnable getDataThread = new Runnable() {
             @Override
             public void run() {
                 String html = null;
@@ -96,9 +102,7 @@ public class ComicContentActivity extends AppCompatActivity {
                         html = sb.toString();
                         httpURLConnection.disconnect();
                     }
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 if(html != null){
@@ -117,12 +121,16 @@ public class ComicContentActivity extends AppCompatActivity {
                     Gson gson = new Gson();
                     comicContentList = gson.fromJson(imgData, new TypeToken<List<ComicContent>>(){}.getType());
                     Element data = document.getElementsByClass("vg-r-data").get(0);
-                    String headUrl = data.attr("data-host") + data.attr("data-img_pre");
+                    final String headUrl = data.attr("data-host") + data.attr("data-img_pre");
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
                             for(ComicContent comicContent : comicContentList){
                                 View view = LayoutInflater.from(ComicContentActivity.this).inflate(R.layout.viewpager_content,null);
+                                ImageView imageView = view.findViewById(R.id.image);
+                                imageView.setImageResource(R.drawable.loading);
+                                ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
+                                layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels / 2;
                                 view.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View view) {
@@ -132,37 +140,58 @@ public class ComicContentActivity extends AppCompatActivity {
                                 viewList.add(view);
                             }
                             viewPager.setAdapter(new ComicContentViewPagerAdapter(viewList));
+                            viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+                                @Override
+                                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                                    seekBar.setProgress((int)((double) position / (double) viewList.size() * 100.0));
+                                }
+
+                                @Override
+                                public void onPageSelected(int position) {
+                                    seekBar.setProgress((int)((double) position / (double) viewList.size() * 100.0));
+                                }
+
+                                @Override
+                                public void onPageScrollStateChanged(int state) {
+
+                                }
+                            });
                         }
                     });
                     for(int i = 0;i < comicContentList.size();i++){
-                        try {
-                            URL url = new URL(headUrl + "/" + comicContentList.get(i).getImg());
-                            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-                            httpURLConnection.setRequestMethod("GET");
-                            if(httpURLConnection.getResponseCode() == 200){
-                                InputStream in = httpURLConnection.getInputStream();
-                                final Bitmap bitmap = BitmapFactory.decodeStream(in);
-                                final int pos = i;
-                                handler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ImageView imageView = viewList.get(pos).findViewById(R.id.image);
-                                        imageView.setImageBitmap(bitmap);
+                        final int pos = i;
+                        Runnable getImgThread = new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    URL url = new URL(headUrl + "/" + comicContentList.get(pos).getImg());
+                                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                                    httpURLConnection.setRequestMethod("GET");
+                                    if(httpURLConnection.getResponseCode() == 200){
+                                        InputStream in = httpURLConnection.getInputStream();
+                                        final Bitmap bitmap = BitmapFactory.decodeStream(in);
+                                        handler.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                ImageView imageView = viewList.get(pos).findViewById(R.id.image);
+                                                imageView.setImageBitmap(bitmap);
+                                                ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
+                                                layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels;
+                                            }
+                                        });
+                                        httpURLConnection.disconnect();
                                     }
-                                });
-                                httpURLConnection.disconnect();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (ProtocolException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        };
+                        MainActivity.executor.execute(getImgThread);
                     }
                 }
             }
-        }).start();
+        };
+        MainActivity.executor.execute(getDataThread);
     }
 
     void initBottomDialog(){
@@ -170,5 +199,57 @@ public class ComicContentActivity extends AppCompatActivity {
         View view = getLayoutInflater().inflate(R.layout.dialog_content,null);
         dialog.setContentView(view);
         ((View) view.getParent()).getBackground().setAlpha(100);
+        TextView previous = view.findViewById(R.id.previous);
+        TextView next = view.findViewById(R.id.next);
+        seekBar = view.findViewById(R.id.seekbar);
+        if(position - 1 >= 0){
+            previous.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(ComicContentActivity.this,ComicContentActivity.class);
+                    intent.putExtra("comicTab",comicTab);
+                    intent.putExtra("position",position - 1);
+                    startActivity(intent);
+                    dialog.dismiss();
+                    finish();
+                    ComicContentActivity.this.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                }
+            });
+        }
+        else {
+            previous.setTextColor(Color.GRAY);
+        }
+        if(position + 1 < comicTab.getSections().size()){
+            next.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(ComicContentActivity.this,ComicContentActivity.class);
+                    intent.putExtra("comicTab",comicTab);
+                    intent.putExtra("position",position + 1);
+                    startActivity(intent);
+                    dialog.dismiss();
+                    finish();
+                    ComicContentActivity.this.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                }
+            });
+        }
+        else {
+            next.setTextColor(Color.GRAY);
+        }
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                if(b)
+                    viewPager.setCurrentItem((int)((double)i / 100.0 * (double) viewList.size()));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
     }
 }

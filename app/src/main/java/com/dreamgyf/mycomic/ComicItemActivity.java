@@ -73,87 +73,88 @@ public class ComicItemActivity extends AppCompatActivity {
         int pos = url.lastIndexOf("/");
         comic.setId(url.substring(pos + 1));
 
-        new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String html = null;
-                        try {
-                            HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(url).openConnection();
-                            httpURLConnection.setRequestMethod("GET");
-                            if (httpURLConnection.getResponseCode() == 200) {
-                                InputStream in = httpURLConnection.getInputStream();
-                                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                                StringBuffer sb = new StringBuffer();
-                                String temp;
-                                while ((temp = reader.readLine()) != null) {
-                                    sb.append(temp);
-                                }
-                                html = sb.toString();
-                                httpURLConnection.disconnect();
-                            }
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+        Runnable getDataThread = new Runnable() {
+            @Override
+            public void run() {
+                String html = null;
+                try {
+                    HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(url).openConnection();
+                    httpURLConnection.setRequestMethod("GET");
+                    if (httpURLConnection.getResponseCode() == 200) {
+                        InputStream in = httpURLConnection.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                        StringBuffer sb = new StringBuffer();
+                        String temp;
+                        while ((temp = reader.readLine()) != null) {
+                            sb.append(temp);
                         }
-                        if(html != null) {
-                            Document document = Jsoup.parse(html);
-                            final String title = document.getElementsByClass("comic-title").text();
-                            comic.setTitle(title);
-                            final String description = document.getElementsByClass("comic_story").text();
-                            comic.setDescription(description);
-                            Elements tabs = document.getElementById("myTab").getElementsByTag("a");
-                            List<ComicTab> comicTabList = new ArrayList<>();
-                            for(Element tab : tabs){
-                                ComicTab comicTab = new ComicTab();
-                                comicTab.setId(tab.attr("aria-controls"));
-                                comicTab.setName(tab.child(0).text());
-                                Element bookList = document.getElementById("comic-book-list");
-                                Element ol = bookList.getElementById(comicTab.getId()).getElementsByTag("ol").get(0);
-                                Elements sections = ol.getElementsByTag("a");
-                                LinkedList<Section> sectionList = new LinkedList<>();
-                                for(Element sectionA : sections){
-                                    Section section = new Section();
-                                    section.setName(sectionA.text());
-                                    section.setHref(sectionA.attr("href"));
-                                    sectionList.add(section);
-                                }
-                                comicTab.setSections(sectionList);
-                                comicTabList.add(comicTab);
-                            }
-                            comic.setTabs(comicTabList);
-
-                            handler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    toolbar.setTitle(title);
-                                    ComicItemActivity.this.description.setText(description);
-                                    tabLayout = findViewById(R.id.tabLayout);
-                                    viewPager = findViewById(R.id.viewpager);
-                                    for(final ComicTab tab : comic.getTabs()){
-                                        //针对每个标签绘制标签页
-                                        View view = LayoutInflater.from(ComicItemActivity.this).inflate(R.layout.viewpager_tab,null);
-                                        GridView gridView = view.findViewById(R.id.gridview);
-                                        SectionGridViewAdapter sectionGridViewAdapter = new SectionGridViewAdapter(tab);
-                                        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                            @Override
-                                            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                                                Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
-                                                intent.putExtra("comicTab",tab);
-                                                intent.putExtra("position",i);
-                                                startActivity(intent);
-                                            }
-                                        });
-                                        gridView.setAdapter(sectionGridViewAdapter);
-                                        viewList.add(view);
-                                        titleList.add(tab.getName());
-                                    }
-                                    tabLayout.setupWithViewPager(viewPager);
-                                    viewPager.setAdapter(new TabViewPagerAdapter(titleList, viewList));
-                                }
-                            });
-                        }
+                        html = sb.toString();
+                        httpURLConnection.disconnect();
                     }
-                }).start();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if(html != null) {
+                    Document document = Jsoup.parse(html);
+                    final String title = document.getElementsByClass("comic-title").text();
+                    comic.setTitle(title);
+                    final String description = document.getElementsByClass("comic_story").text();
+                    comic.setDescription(description);
+                    Elements tabs = document.getElementById("myTab").getElementsByTag("a");
+                    List<ComicTab> comicTabList = new ArrayList<>();
+                    for(Element tab : tabs){
+                        ComicTab comicTab = new ComicTab();
+                        comicTab.setId(tab.attr("aria-controls"));
+                        comicTab.setName(tab.child(0).text());
+                        Element bookList = document.getElementById("comic-book-list");
+                        Element ol = bookList.getElementById(comicTab.getId()).getElementsByTag("ol").get(0);
+                        Elements sections = ol.getElementsByTag("a");
+                        LinkedList<Section> sectionList = new LinkedList<>();
+                        for(Element sectionA : sections){
+                            Section section = new Section();
+                            section.setName(sectionA.text());
+                            section.setHref(sectionA.attr("href"));
+                            sectionList.add(section);
+                        }
+                        comicTab.setSections(sectionList);
+                        comicTabList.add(comicTab);
+                    }
+                    comic.setTabs(comicTabList);
+
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            toolbar.setTitle(title);
+                            ComicItemActivity.this.description.setText(description);
+                            tabLayout = findViewById(R.id.tabLayout);
+                            viewPager = findViewById(R.id.viewpager);
+                            for(final ComicTab tab : comic.getTabs()){
+                                //针对每个标签绘制标签页
+                                View view = LayoutInflater.from(ComicItemActivity.this).inflate(R.layout.viewpager_tab,null);
+                                GridView gridView = view.findViewById(R.id.gridview);
+                                SectionGridViewAdapter sectionGridViewAdapter = new SectionGridViewAdapter(tab);
+                                gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                    @Override
+                                    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                                        Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
+                                        intent.putExtra("comicTab",tab);
+                                        intent.putExtra("position",i);
+                                        startActivity(intent);
+                                    }
+                                });
+                                gridView.setAdapter(sectionGridViewAdapter);
+                                viewList.add(view);
+                                titleList.add(tab.getName());
+                            }
+                            tabLayout.setupWithViewPager(viewPager);
+                            viewPager.setAdapter(new TabViewPagerAdapter(titleList, viewList));
+                        }
+                    });
+                }
+            }
+        };
+        MainActivity.executor.execute(getDataThread);
     }
 }

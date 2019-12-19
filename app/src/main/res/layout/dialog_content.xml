@@ -18,9 +18,11 @@
         android:text="上一话"/>
 
     <SeekBar
+        android:id="@+id/seekbar"
         android:layout_width="wrap_content"
         android:layout_height="100dp"
-        android:layout_weight="10"/>
+        android:layout_weight="10"
+        android:max="100"/>
 
     <TextView
         android:id="@+id/next"

@@ -125,8 +125,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     }
 
     public void search(final String keyword){
+        count.setText("");
         searchResultEntityList.clear();
-        new Thread(new Runnable() {
+        Runnable searchThread = new Runnable() {
             @Override
             public void run() {
                 String html = null;
@@ -145,38 +146,55 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                         html = sb.toString();
                         httpURLConnection.disconnect();
                     }
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 if(html != null){
                     Document document = Jsoup.parse(html);
                     final String countText = document.getElementsByClass("text-muted").get(0).text();
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            count.setText(countText);
+                        }
+                    });
                     Element mainDiv = document.getElementsByClass("comic-main-section").get(0);
-                    Elements comicDiv = mainDiv.getElementsByClass("row").get(0).children();
+                    Elements item = mainDiv.getElementsByClass("row");
+                    Elements comicDiv;
+                    if(item.isEmpty())
+                        comicDiv = new Elements();
+                    else
+                        comicDiv = item.get(0).children();
                     for(Element comic : comicDiv){
                         Elements elements = comic.getElementsByTag("a");
-                        SearchResultEntity entity = new SearchResultEntity();
+                        final SearchResultEntity entity = new SearchResultEntity();
                         entity.setHref(elements.get(0).attr("href"));
-                        String imgUrl = elements.get(0).getElementsByTag("img").get(0).attr("src");
-                        try {
-                            URL url = new URL(imgUrl);
-                            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-                            httpURLConnection.setRequestMethod("GET");
-                            if(httpURLConnection.getResponseCode() == 200){
-                                InputStream in = httpURLConnection.getInputStream();
-                                Bitmap bitmap = BitmapFactory.decodeStream(in);
-                                entity.setImage(bitmap);
-                                httpURLConnection.disconnect();
+                        final String imgUrl = elements.get(0).getElementsByTag("img").get(0).attr("src");
+                        Runnable loadingImgThread = new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    URL url = new URL(imgUrl);
+                                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                                    httpURLConnection.setRequestMethod("GET");
+                                    if(httpURLConnection.getResponseCode() == 200){
+                                        InputStream in = httpURLConnection.getInputStream();
+                                        Bitmap bitmap = BitmapFactory.decodeStream(in);
+                                        entity.setImage(bitmap);
+                                        httpURLConnection.disconnect();
+                                        handler.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                notifyDataSetChanged();
+                                            }
+                                        });
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (ProtocolException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        };
+                        MainActivity.executor.execute(loadingImgThread);
                         entity.setTitle(elements.get(1).text());
                         entity.setAuthor(elements.get(2).text());
                         searchResultEntityList.add(entity);
@@ -185,11 +203,12 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                         @Override
                         public void run() {
                             notifyDataSetChanged();
-                            count.setText(countText);
                         }
                     });
                 }
             }
-        }).start();
+        };
+
+        MainActivity.executor.execute(searchThread);
     }
 }

@@ -18,7 +18,6 @@
         android:id="@+id/text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="xx个搜索结果"
         app:layout_constraintTop_toBottomOf="@+id/search"/>
 
     <androidx.recyclerview.widget.RecyclerView

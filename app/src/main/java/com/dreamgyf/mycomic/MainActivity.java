@@ -23,12 +23,15 @@ import com.dreamgyf.mycomic.adapter.SearchAdapter;
 import com.dreamgyf.mycomic.entity.SearchResultEntity;
 
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
     private SearchAdapter searchAdapter;
 
-    private GestureDetector gestureDetector;
+    public static ExecutorService executor = Executors.newFixedThreadPool(10);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
