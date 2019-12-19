@@ -128,15 +128,16 @@ public class ComicContentActivity extends AppCompatActivity {
                             for(ComicContent comicContent : comicContentList){
                                 View view = LayoutInflater.from(ComicContentActivity.this).inflate(R.layout.viewpager_content,null);
                                 ImageView imageView = view.findViewById(R.id.image);
+                                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                                 imageView.setImageResource(R.drawable.loading);
-                                ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
-                                layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels / 2;
-                                view.setOnClickListener(new View.OnClickListener() {
+                                imageView.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View view) {
                                         dialog.show();
                                     }
                                 });
+                                ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
+                                layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels / 2;
                                 viewList.add(view);
                             }
                             viewPager.setAdapter(new ComicContentViewPagerAdapter(viewList));
@@ -174,6 +175,7 @@ public class ComicContentActivity extends AppCompatActivity {
                                             @Override
                                             public void run() {
                                                 ImageView imageView = viewList.get(pos).findViewById(R.id.image);
+                                                imageView.setScaleType(ImageView.ScaleType.MATRIX);
                                                 imageView.setImageBitmap(bitmap);
                                                 ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
                                                 layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels;
