@@ -7,12 +7,7 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import com.dreamgyf.mycomic.R;
-import com.dreamgyf.mycomic.entity.ComicEntity;
 import com.dreamgyf.mycomic.entity.ComicTab;
-
-import java.util.List;
-
-import androidx.recyclerview.widget.RecyclerView;
 
 public class SectionGridViewAdapter extends BaseAdapter {
 

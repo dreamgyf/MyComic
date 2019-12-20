@@ -4,11 +4,13 @@ import android.graphics.Bitmap;
 
 import java.io.Serializable;
 
-public class SearchResultEntity implements Serializable {
+public class ComicInfo implements Serializable {
 
     private String href;
 
-    private Bitmap image;
+    private String imageUrl;
+
+    private transient Bitmap image;
 
     private String title;
 
@@ -20,6 +22,14 @@ public class SearchResultEntity implements Serializable {
 
     public void setHref(String href) {
         this.href = href;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Bitmap getImage() {

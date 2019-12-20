@@ -13,7 +13,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ComicContentActivity"></activity>
+        <activity android:name=".SearchActivity"></activity>
+        <activity android:name=".ComicContentActivity" />
         <activity android:name=".ComicItemActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>

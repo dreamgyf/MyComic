@@ -3,7 +3,7 @@ package com.dreamgyf.mycomic.entity;
 import java.io.Serializable;
 import java.util.List;
 
-public class ComicEntity implements Serializable {
+public class ComicDetail implements Serializable {
 
     private String id;
 

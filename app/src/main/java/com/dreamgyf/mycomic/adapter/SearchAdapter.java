@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.dreamgyf.mycomic.ComicItemActivity;
 import com.dreamgyf.mycomic.MainActivity;
 import com.dreamgyf.mycomic.R;
-import com.dreamgyf.mycomic.entity.SearchResultEntity;
+import com.dreamgyf.mycomic.entity.ComicInfo;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -24,14 +24,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +37,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
 
     private TextView count;
 
-    private List<SearchResultEntity> searchResultEntityList = new ArrayList<>();
+    private List<ComicInfo> comicInfoList = new ArrayList<>();
 
     private RecyclerView recyclerView;
 
@@ -67,9 +63,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
         count = textView;
         onItemClickListener = new OnItemClickListener() {
             @Override
-            public void onItemClick(final RecyclerView recyclerView, View view, int position, final SearchResultEntity result) {
+            public void onItemClick(final RecyclerView recyclerView, View view, int position, final ComicInfo result) {
                 Intent intent = new Intent(textView.getContext(), ComicItemActivity.class);
-                intent.putExtra("url","https://www.manhuadb.com" + result.getHref());
+                intent.putExtra("comicInfo",result);
                 textView.getContext().startActivity(intent);
             }
         };
@@ -86,15 +82,15 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        SearchResultEntity searchResultEntity = searchResultEntityList.get(position);
-        holder.imageView.setImageBitmap(searchResultEntity.getImage());
-        holder.title.setText(searchResultEntity.getTitle());
-        holder.author.setText(searchResultEntity.getAuthor());
+        ComicInfo comicInfo = comicInfoList.get(position);
+        holder.imageView.setImageBitmap(comicInfo.getImage());
+        holder.title.setText(comicInfo.getTitle());
+        holder.author.setText(comicInfo.getAuthor());
     }
 
     @Override
     public int getItemCount() {
-        return searchResultEntityList.size();
+        return comicInfoList.size();
     }
 
     @Override
@@ -110,7 +106,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     }
 
     public interface OnItemClickListener{
-        void onItemClick(RecyclerView recyclerView,View view,int position,SearchResultEntity result);
+        void onItemClick(RecyclerView recyclerView, View view, int position, ComicInfo result);
     }
 
     public void addOnItemClickListener(OnItemClickListener onItemClickListener){
@@ -121,12 +117,12 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     public void onClick(View view) {
         int position = recyclerView.getChildAdapterPosition(view);
         if(onItemClickListener != null)
-            onItemClickListener.onItemClick(recyclerView,view,position,searchResultEntityList.get(position));
+            onItemClickListener.onItemClick(recyclerView,view,position, comicInfoList.get(position));
     }
 
     public void search(final String keyword){
         count.setText("");
-        searchResultEntityList.clear();
+        comicInfoList.clear();
         Runnable searchThread = new Runnable() {
             @Override
             public void run() {
@@ -167,9 +163,13 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                         comicDiv = item.get(0).children();
                     for(Element comic : comicDiv){
                         Elements elements = comic.getElementsByTag("a");
-                        final SearchResultEntity entity = new SearchResultEntity();
+                        final ComicInfo entity = new ComicInfo();
                         entity.setHref(elements.get(0).attr("href"));
-                        final String imgUrl = elements.get(0).getElementsByTag("img").get(0).attr("src");
+                        String tempImgUrl = elements.get(0).getElementsByTag("img").get(0).attr("src");
+                        if(!tempImgUrl.contains("http"))
+                            tempImgUrl = "https://media.manhuadb.com" + tempImgUrl;
+                        final String imgUrl = tempImgUrl;
+                        entity.setImageUrl(imgUrl);
                         Runnable loadingImgThread = new Runnable() {
                             @Override
                             public void run() {
@@ -197,7 +197,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                         MainActivity.executor.execute(loadingImgThread);
                         entity.setTitle(elements.get(1).text());
                         entity.setAuthor(elements.get(2).text());
-                        searchResultEntityList.add(entity);
+                        comicInfoList.add(entity);
                     }
                     handler.post(new Runnable() {
                         @Override

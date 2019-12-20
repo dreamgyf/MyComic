@@ -1,24 +1,34 @@
 package com.dreamgyf.mycomic;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.viewpager.widget.ViewPager;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.dreamgyf.mycomic.adapter.SectionGridViewAdapter;
 import com.dreamgyf.mycomic.adapter.TabViewPagerAdapter;
-import com.dreamgyf.mycomic.entity.ComicEntity;
+import com.dreamgyf.mycomic.entity.ComicDetail;
+import com.dreamgyf.mycomic.entity.ComicInfo;
 import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.entity.Section;
+import com.dreamgyf.mycomic.utils.BeanUtils;
+import com.dreamgyf.mycomic.utils.SharedPreferencesUtils;
 import com.google.android.material.tabs.TabLayout;
 
 import org.jsoup.Jsoup;
@@ -41,7 +51,9 @@ public class ComicItemActivity extends AppCompatActivity {
 
     private Handler handler = new Handler();
 
-    private ComicEntity comic;
+    private ComicInfo comicInfo;
+
+    private ComicDetail comic;
 
     private Toolbar toolbar;
 
@@ -55,23 +67,100 @@ public class ComicItemActivity extends AppCompatActivity {
 
     private List<String> titleList = new ArrayList<>();
 
+    private LinearLayout collectButton;
+
+    private ImageView collectImage;
+
+    private TextView collectText;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_comic_item);
 
-        comic = new ComicEntity();
+        comic = new ComicDetail();
 
         toolbar = findViewById(R.id.toolbar);
+        collectButton = findViewById(R.id.collect_button);
+        collectImage = findViewById(R.id.collect_image);
+        collectText = findViewById(R.id.collect_text);
 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         description = findViewById(R.id.description);
 
-        final String url = getIntent().getStringExtra("url");
+        comicInfo = (ComicInfo) getIntent().getSerializableExtra("comicInfo");
+        final String url = "https://www.manhuadb.com" + comicInfo.getHref();
         int pos = url.lastIndexOf("/");
         comic.setId(url.substring(pos + 1));
+
+        //初始化收藏状态
+        try {
+            List<ComicInfo> comicInfoList = SharedPreferencesUtils.getComicInfoList(this);
+            if(comicInfoList != null){
+                for(int i = 0;i < comicInfoList.size();i++){
+                    if(comicInfoList.get(i).getHref().equals(comicInfo.getHref())){
+                        collectImage.setImageResource(R.drawable.ic_is_collect);
+                        collectText.setText("已收藏");
+                        break;
+                    }
+                    else if(i == comicInfoList.size() - 1){
+                        collectImage.setImageResource(R.drawable.ic_not_collect);
+                        collectText.setText("收藏");
+                    }
+                }
+            }
+            else {
+                collectImage.setImageResource(R.drawable.ic_not_collect);
+                collectText.setText("收藏");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        collectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    ArrayList<ComicInfo> comicInfoList = SharedPreferencesUtils.getComicInfoList(ComicItemActivity.this);
+                    if(comicInfoList != null) {
+                        for(int i = 0;i < comicInfoList.size();i++){
+                            if(comicInfoList.get(i).getHref().equals(comicInfo.getHref())){
+                                comicInfoList.remove(i);
+                                SharedPreferencesUtils.setComicInfoList(ComicItemActivity.this,comicInfoList);
+                                collectImage.setImageResource(R.drawable.ic_not_collect);
+                                collectText.setText("收藏");
+                                Toast toast = Toast.makeText(ComicItemActivity.this,"",Toast.LENGTH_SHORT);
+                                toast.setText("再见了您呐~");
+                                toast.show();
+                                return;
+                            }
+                        }
+                        comicInfoList.add(0,comicInfo);
+                        SharedPreferencesUtils.setComicInfoList(ComicItemActivity.this,comicInfoList);
+                        collectImage.setImageResource(R.drawable.ic_is_collect);
+                        collectText.setText("已收藏");
+                        Toast toast = Toast.makeText(ComicItemActivity.this,"",Toast.LENGTH_SHORT);
+                        toast.setText("我来啦~");
+                        toast.show();
+                    }
+                    else {
+                        comicInfoList = new ArrayList<>();
+                        comicInfoList.add(0,comicInfo);
+                        SharedPreferencesUtils.setComicInfoList(ComicItemActivity.this,comicInfoList);
+                        collectImage.setImageResource(R.drawable.ic_is_collect);
+                        collectText.setText("已收藏");
+                        Toast toast = Toast.makeText(ComicItemActivity.this,"",Toast.LENGTH_SHORT);
+                        toast.setText("我来啦~");
+                        toast.show();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         Runnable getDataThread = new Runnable() {
             @Override
@@ -156,5 +245,15 @@ public class ComicItemActivity extends AppCompatActivity {
             }
         };
         MainActivity.executor.execute(getDataThread);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                finish();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

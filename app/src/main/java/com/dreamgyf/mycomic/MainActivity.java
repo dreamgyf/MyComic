@@ -1,83 +1,89 @@
 package com.dreamgyf.mycomic;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.GestureDetector;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.MotionEvent;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.AdapterView;
+import android.widget.GridView;
+import android.widget.ImageView;
 
-import com.dreamgyf.mycomic.adapter.SearchAdapter;
-import com.dreamgyf.mycomic.entity.SearchResultEntity;
+import com.dreamgyf.mycomic.adapter.CollectGridViewAdapter;
+import com.dreamgyf.mycomic.adapter.HomeViewPagerAdapter;
+import com.dreamgyf.mycomic.entity.ComicInfo;
+import com.google.android.material.tabs.TabLayout;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
-    private SearchAdapter searchAdapter;
+    private ImageView searchButton;
 
     public static ExecutorService executor = Executors.newFixedThreadPool(10);
+
+    private List<String> titleList = new ArrayList<>();
+
+    private List<View> viewList = new ArrayList<>();
+
+    private ViewPager viewPager;
+
+    private HomeViewPagerAdapter homeViewPagerAdapter;
+
+    private CollectGridViewAdapter collectGridViewAdapter;
+
+    private TabLayout tabLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //init toolbar
-        Toolbar searchToolbar = findViewById(R.id.search);
-        searchToolbar.setNavigationIcon(null);
-        setSupportActionBar(searchToolbar);
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        searchButton = findViewById(R.id.search_button);
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+                startActivity(intent);
+            }
+        });
 
-        //init search viewPage
-        initSearchResult();
+        initViewPager();
     }
 
-    private void initSearchResult(){
-        RecyclerView recyclerView = findViewById(R.id.list_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
-        searchAdapter = new SearchAdapter((TextView) findViewById(R.id.text));
-        recyclerView.setAdapter(searchAdapter);
+    private void initViewPager(){
+        tabLayout = findViewById(R.id.tabLayout);
+        viewPager = findViewById(R.id.viewpager);
+        tabLayout.setupWithViewPager(viewPager);
+        //收藏页面
+        View view = LayoutInflater.from(this).inflate(R.layout.viewpager_collect,null);
+        GridView gridView = view.findViewById(R.id.gridview);
+        collectGridViewAdapter = new CollectGridViewAdapter(this);
+        gridView.setAdapter(collectGridViewAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                ComicInfo comicInfo = ((CollectGridViewAdapter) adapterView.getAdapter()).getComicInfoList().get(i);
+                Intent intent = new Intent(MainActivity.this, ComicItemActivity.class);
+                intent.putExtra("comicInfo",comicInfo);
+                startActivity(intent);
+            }
+        });
+        viewList.add(view);
+        titleList.add("收藏");
+        homeViewPagerAdapter = new HomeViewPagerAdapter(titleList,viewList);
+        viewPager.setAdapter(homeViewPagerAdapter);
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_toolbar,menu);
-        MenuItem searchItem = menu.findItem(R.id.search);
-        SearchView searchView = (SearchView) searchItem.getActionView();
-        searchView.setIconifiedByDefault(false);
-//        searchView.setSubmitButtonEnabled(true);
-        searchView.setQueryHint("搜索");
-//        SearchView.SearchAutoComplete searchAutoComplete = searchView.findViewById(R.id.search_src_text);
-        searchView.setMaxWidth(Integer.MAX_VALUE);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                searchAdapter.search(query);
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
-            }
-        });
-        return super.onCreateOptionsMenu(menu);
+    protected void onResume() {
+        super.onResume();
+        if(collectGridViewAdapter != null)
+            collectGridViewAdapter.refresh();
     }
 }
