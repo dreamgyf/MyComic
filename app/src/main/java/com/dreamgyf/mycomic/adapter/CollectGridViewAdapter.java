@@ -21,6 +21,7 @@ import com.dreamgyf.mycomic.entity.ComicContent;
 import com.dreamgyf.mycomic.entity.ComicInfo;
 import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.utils.BeanUtils;
+import com.dreamgyf.mycomic.utils.SharedPreferencesUtils;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.InputStream;
@@ -48,13 +49,10 @@ public class CollectGridViewAdapter extends BaseAdapter {
     public CollectGridViewAdapter(Context context) {
         super();
         this.context = context;
-        comicInfoList = new ArrayList<>();
-        SharedPreferences sharedPreferences = context.getSharedPreferences("comic",Context.MODE_PRIVATE);
-        String collectListBase64 = sharedPreferences.getString("collectList",null);
-        if(collectListBase64 != null){
-            try {
-                comicInfoList = BeanUtils.decodeBean(collectListBase64,ArrayList.class);
-                for(int i = 0;i < comicInfoList.size();i++){
+        try {
+            comicInfoList = SharedPreferencesUtils.getComicInfoList(context);
+            if(comicInfoList != null){
+                for(int i = 0;i < comicInfoList.size();i++) {
                     final int pos = i;
                     Runnable loadingImgThread = new Runnable() {
                         @Override
@@ -63,7 +61,7 @@ public class CollectGridViewAdapter extends BaseAdapter {
                                 URL url = new URL(comicInfoList.get(pos).getImageUrl());
                                 HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                                 httpURLConnection.setRequestMethod("GET");
-                                if(httpURLConnection.getResponseCode() == 200){
+                                if (httpURLConnection.getResponseCode() == 200) {
                                     InputStream in = httpURLConnection.getInputStream();
                                     Bitmap bitmap = BitmapFactory.decodeStream(in);
                                     comicInfoList.get(pos).setImage(bitmap);
@@ -82,9 +80,12 @@ public class CollectGridViewAdapter extends BaseAdapter {
                     };
                     MainActivity.executor.execute(loadingImgThread);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+            else
+                comicInfoList = new ArrayList<>();
+        } catch (Exception e) {
+            e.printStackTrace();
+            comicInfoList = new ArrayList<>();
         }
     }
 
@@ -128,15 +129,14 @@ public class CollectGridViewAdapter extends BaseAdapter {
     }
 
     public void refresh(){
-        SharedPreferences sharedPreferences = context.getSharedPreferences("comic",Context.MODE_PRIVATE);
-        String collectListBase64 = sharedPreferences.getString("collectList",null);
-        if(collectListBase64 != null) {
-            try {
-                ArrayList<ComicInfo> tempComicInfoList = BeanUtils.decodeBean(collectListBase64, ArrayList.class);
+        try {
+            ArrayList<ComicInfo> tempComicInfoList = SharedPreferencesUtils.getComicInfoList(context);
+            if(tempComicInfoList != null){
                 for (int i = 0; i < comicInfoList.size(); i++) {
                     if(tempComicInfoList.isEmpty()){
-                        comicInfoList.clear();
-                        break;
+                        comicInfoList.remove(i);
+                        i--;
+                        continue;
                     }
                     for (int j = 0; j < tempComicInfoList.size(); j++) {
                         if (comicInfoList.get(i).getHref().equals(tempComicInfoList.get(j).getHref())) {
@@ -179,13 +179,13 @@ public class CollectGridViewAdapter extends BaseAdapter {
                     };
                     MainActivity.executor.execute(loadingImgThread);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }
-        else {
-            comicInfoList.clear();
-            notifyDataSetChanged();
+            else {
+                comicInfoList.clear();
+                notifyDataSetChanged();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

@@ -45,7 +45,7 @@ public class SearchActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_toolbar,menu);
         MenuItem searchItem = menu.findItem(R.id.search);
-        SearchView searchView = (SearchView) searchItem.getActionView();
+        final SearchView searchView = (SearchView) searchItem.getActionView();
         searchView.onActionViewExpanded();
         searchView.setQueryHint("搜索");
         searchView.setMaxWidth(Integer.MAX_VALUE);
@@ -53,6 +53,7 @@ public class SearchActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 searchAdapter.search(query);
+                searchView.clearFocus();
                 return false;
             }
 
