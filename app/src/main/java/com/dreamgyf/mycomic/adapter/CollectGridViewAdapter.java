@@ -32,7 +32,7 @@ import java.util.List;
 
 public class CollectGridViewAdapter extends BaseAdapter {
 
-    private Context context;
+    private MainActivity context;
 
     private Handler handler = new Handler();
 
@@ -46,7 +46,7 @@ public class CollectGridViewAdapter extends BaseAdapter {
         TextView author;
     }
 
-    public CollectGridViewAdapter(Context context) {
+    public CollectGridViewAdapter(MainActivity context) {
         super();
         this.context = context;
         try {
@@ -78,7 +78,7 @@ public class CollectGridViewAdapter extends BaseAdapter {
                             }
                         }
                     };
-                    MainActivity.executor.execute(loadingImgThread);
+                    context.getExecutor().execute(loadingImgThread);
                 }
             }
             else
@@ -177,7 +177,7 @@ public class CollectGridViewAdapter extends BaseAdapter {
                             }
                         }
                     };
-                    MainActivity.executor.execute(loadingImgThread);
+                    context.getExecutor().execute(loadingImgThread);
                 }
             }
             else {

@@ -15,7 +15,12 @@ import android.widget.TextView;
 
 import com.dreamgyf.mycomic.adapter.SearchAdapter;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class SearchActivity extends AppCompatActivity {
+
+    private ExecutorService executor = Executors.newFixedThreadPool(10);
 
     private SearchAdapter searchAdapter;
 
@@ -37,8 +42,12 @@ public class SearchActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.list_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
-        searchAdapter = new SearchAdapter((TextView) findViewById(R.id.text));
+        searchAdapter = new SearchAdapter(this,(TextView) findViewById(R.id.text));
         recyclerView.setAdapter(searchAdapter);
+    }
+
+    public ExecutorService getExecutor() {
+        return executor;
     }
 
     @Override
@@ -73,5 +82,11 @@ public class SearchActivity extends AppCompatActivity {
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 }

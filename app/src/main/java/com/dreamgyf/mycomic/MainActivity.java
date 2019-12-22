@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageView searchButton;
 
-    public static ExecutorService executor = Executors.newFixedThreadPool(10);
+    private ExecutorService executor = Executors.newFixedThreadPool(10);
 
     private List<String> titleList = new ArrayList<>();
 
@@ -80,10 +80,19 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setAdapter(homeViewPagerAdapter);
     }
 
+    public ExecutorService getExecutor() {
+        return executor;
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-        if(collectGridViewAdapter != null)
-            collectGridViewAdapter.refresh();
+        collectGridViewAdapter.refresh();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 }

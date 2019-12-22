@@ -1,5 +1,6 @@
 package com.dreamgyf.mycomic.adapter;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.dreamgyf.mycomic.ComicItemActivity;
 import com.dreamgyf.mycomic.MainActivity;
 import com.dreamgyf.mycomic.R;
+import com.dreamgyf.mycomic.SearchActivity;
 import com.dreamgyf.mycomic.entity.ComicInfo;
 
 import org.jsoup.Jsoup;
@@ -32,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder> implements View.OnClickListener {
+
+    private SearchActivity context;
 
     private Handler handler = new Handler();
 
@@ -59,14 +63,15 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
         }
     }
 
-    public SearchAdapter(final TextView textView) {
+    public SearchAdapter(final SearchActivity context, final TextView textView) {
+        this.context = context;
         count = textView;
         onItemClickListener = new OnItemClickListener() {
             @Override
             public void onItemClick(final RecyclerView recyclerView, View view, int position, final ComicInfo result) {
-                Intent intent = new Intent(textView.getContext(), ComicItemActivity.class);
+                Intent intent = new Intent(context, ComicItemActivity.class);
                 intent.putExtra("comicInfo",result);
-                textView.getContext().startActivity(intent);
+                context.startActivity(intent);
             }
         };
     }
@@ -167,7 +172,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                         entity.setHref(elements.get(0).attr("href"));
                         String tempImgUrl = elements.get(0).getElementsByTag("img").get(0).attr("src");
                         if(!tempImgUrl.contains("http"))
-                            tempImgUrl = "https://media.manhuadb.com" + tempImgUrl;
+                            tempImgUrl = "https://www.manhuadb.com" + tempImgUrl;
                         final String imgUrl = tempImgUrl;
                         entity.setImageUrl(imgUrl);
                         Runnable loadingImgThread = new Runnable() {
@@ -194,7 +199,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
                                 }
                             }
                         };
-                        MainActivity.executor.execute(loadingImgThread);
+                        context.getExecutor().execute(loadingImgThread);
                         entity.setTitle(elements.get(1).text());
                         entity.setAuthor(elements.get(2).text());
                         comicInfoList.add(entity);
@@ -209,6 +214,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
             }
         };
 
-        MainActivity.executor.execute(searchThread);
+        context.getExecutor().execute(searchThread);
     }
 }

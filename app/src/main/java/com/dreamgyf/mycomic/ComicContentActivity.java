@@ -19,6 +19,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,8 +27,11 @@ import android.widget.Toast;
 import com.dreamgyf.mycomic.adapter.ComicContentViewPagerAdapter;
 import com.dreamgyf.mycomic.adapter.SectionGridViewAdapter;
 import com.dreamgyf.mycomic.entity.ComicContent;
+import com.dreamgyf.mycomic.entity.ComicInfo;
 import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.entity.Section;
+import com.dreamgyf.mycomic.listener.OnCollectButtonClickListener;
+import com.dreamgyf.mycomic.utils.SharedPreferencesUtils;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.gson.Gson;
@@ -49,10 +53,16 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ComicContentActivity extends AppCompatActivity {
 
+    private ExecutorService executor = Executors.newFixedThreadPool(30);
+
     private Handler handler = new Handler();
+
+    private ComicInfo comicInfo;
 
     private ComicTab comicTab;
 
@@ -68,6 +78,14 @@ public class ComicContentActivity extends AppCompatActivity {
 
     private BottomSheetDialog dialog;
 
+    private TextView sectionText;
+
+    private LinearLayout collectButton;
+
+    private ImageView collectImage;
+
+    private TextView collectText;
+
     private SeekBar seekBar;
 
     @Override
@@ -77,6 +95,7 @@ public class ComicContentActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,  WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_comic_content);
 
+        comicInfo = (ComicInfo) getIntent().getSerializableExtra("comicInfo");
         comicTab = (ComicTab) getIntent().getSerializableExtra("comicTab");
         position = getIntent().getIntExtra("position",-1);
         section = position == -1 ? null : comicTab.getSections().get(position);
@@ -116,7 +135,7 @@ public class ComicContentActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    byte[] decode =Base64.decode(base64,Base64.DEFAULT);
+                    byte[] decode = Base64.decode(base64,Base64.DEFAULT);
                     String imgData = new String(decode);
                     Gson gson = new Gson();
                     comicContentList = gson.fromJson(imgData, new TypeToken<List<ComicContent>>(){}.getType());
@@ -188,12 +207,12 @@ public class ComicContentActivity extends AppCompatActivity {
                                 }
                             }
                         };
-                        MainActivity.executor.execute(getImgThread);
+                        executor.execute(getImgThread);
                     }
                 }
             }
         };
-        MainActivity.executor.execute(getDataThread);
+        executor.execute(getDataThread);
     }
 
     void initBottomDialog(){
@@ -201,14 +220,48 @@ public class ComicContentActivity extends AppCompatActivity {
         View view = getLayoutInflater().inflate(R.layout.dialog_content,null);
         dialog.setContentView(view);
         ((View) view.getParent()).getBackground().setAlpha(100);
+        sectionText = view.findViewById(R.id.section);
+        collectButton = view.findViewById(R.id.collect_button);
+        collectImage = view.findViewById(R.id.collect_image);
+        collectText = view.findViewById(R.id.collect_text);
         TextView previous = view.findViewById(R.id.previous);
         TextView next = view.findViewById(R.id.next);
         seekBar = view.findViewById(R.id.seekbar);
+        //当前话标题
+        sectionText.setText(section.getName());
+        //收藏按钮
+        //初始化收藏状态
+        try {
+            List<ComicInfo> comicInfoList = SharedPreferencesUtils.getComicInfoList(this);
+            if(comicInfoList != null){
+                for(int i = 0;i < comicInfoList.size();i++){
+                    if(comicInfoList.get(i).getHref().equals(comicInfo.getHref())){
+                        collectImage.setImageResource(R.drawable.ic_is_collect);
+                        collectText.setText("已收藏");
+                        break;
+                    }
+                    else if(i == comicInfoList.size() - 1){
+                        collectImage.setImageResource(R.drawable.ic_not_collect);
+                        collectText.setText("收藏");
+                    }
+                }
+            }
+            else {
+                collectImage.setImageResource(R.drawable.ic_not_collect);
+                collectText.setText("收藏");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //收藏点击事件
+        collectButton.setOnClickListener(new OnCollectButtonClickListener(this,comicInfo,collectImage,collectText));
+        //上一话
         if(position - 1 >= 0){
             previous.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(ComicContentActivity.this,ComicContentActivity.class);
+                    intent.putExtra("comicInfo",comicInfo);
                     intent.putExtra("comicTab",comicTab);
                     intent.putExtra("position",position - 1);
                     startActivity(intent);
@@ -221,11 +274,13 @@ public class ComicContentActivity extends AppCompatActivity {
         else {
             previous.setTextColor(Color.GRAY);
         }
+        //下一话
         if(position + 1 < comicTab.getSections().size()){
             next.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(ComicContentActivity.this,ComicContentActivity.class);
+                    intent.putExtra("comicInfo",comicInfo);
                     intent.putExtra("comicTab",comicTab);
                     intent.putExtra("position",position + 1);
                     startActivity(intent);
@@ -238,6 +293,7 @@ public class ComicContentActivity extends AppCompatActivity {
         else {
             next.setTextColor(Color.GRAY);
         }
+        //进度条
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -253,5 +309,16 @@ public class ComicContentActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
+    }
+
+    public ExecutorService getExecutor() {
+        return executor;
+    }
+
+    @Override
+    protected void onDestroy() {
+        dialog.dismiss();
+        super.onDestroy();
+        executor.shutdownNow();
     }
 }

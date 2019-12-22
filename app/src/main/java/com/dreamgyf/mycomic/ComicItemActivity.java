@@ -27,6 +27,7 @@ import com.dreamgyf.mycomic.entity.ComicDetail;
 import com.dreamgyf.mycomic.entity.ComicInfo;
 import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.entity.Section;
+import com.dreamgyf.mycomic.listener.OnCollectButtonClickListener;
 import com.dreamgyf.mycomic.utils.BeanUtils;
 import com.dreamgyf.mycomic.utils.SharedPreferencesUtils;
 import com.google.android.material.tabs.TabLayout;
@@ -46,8 +47,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ComicItemActivity extends AppCompatActivity {
+
+    private ExecutorService executor = Executors.newFixedThreadPool(10);
 
     private Handler handler = new Handler();
 
@@ -94,73 +99,8 @@ public class ComicItemActivity extends AppCompatActivity {
         final String url = "https://www.manhuadb.com" + comicInfo.getHref();
         int pos = url.lastIndexOf("/");
         comic.setId(url.substring(pos + 1));
-
-        //初始化收藏状态
-        try {
-            List<ComicInfo> comicInfoList = SharedPreferencesUtils.getComicInfoList(this);
-            if(comicInfoList != null){
-                for(int i = 0;i < comicInfoList.size();i++){
-                    if(comicInfoList.get(i).getHref().equals(comicInfo.getHref())){
-                        collectImage.setImageResource(R.drawable.ic_is_collect);
-                        collectText.setText("已收藏");
-                        break;
-                    }
-                    else if(i == comicInfoList.size() - 1){
-                        collectImage.setImageResource(R.drawable.ic_not_collect);
-                        collectText.setText("收藏");
-                    }
-                }
-            }
-            else {
-                collectImage.setImageResource(R.drawable.ic_not_collect);
-                collectText.setText("收藏");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-        collectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                try {
-                    ArrayList<ComicInfo> comicInfoList = SharedPreferencesUtils.getComicInfoList(ComicItemActivity.this);
-                    if(comicInfoList != null) {
-                        for(int i = 0;i < comicInfoList.size();i++){
-                            if(comicInfoList.get(i).getHref().equals(comicInfo.getHref())){
-                                comicInfoList.remove(i);
-                                SharedPreferencesUtils.setComicInfoList(ComicItemActivity.this,comicInfoList);
-                                collectImage.setImageResource(R.drawable.ic_not_collect);
-                                collectText.setText("收藏");
-                                Toast toast = Toast.makeText(ComicItemActivity.this,"",Toast.LENGTH_SHORT);
-                                toast.setText("再见了您呐~");
-                                toast.show();
-                                return;
-                            }
-                        }
-                        comicInfoList.add(0,comicInfo);
-                        SharedPreferencesUtils.setComicInfoList(ComicItemActivity.this,comicInfoList);
-                        collectImage.setImageResource(R.drawable.ic_is_collect);
-                        collectText.setText("已收藏");
-                        Toast toast = Toast.makeText(ComicItemActivity.this,"",Toast.LENGTH_SHORT);
-                        toast.setText("我来啦~");
-                        toast.show();
-                    }
-                    else {
-                        comicInfoList = new ArrayList<>();
-                        comicInfoList.add(0,comicInfo);
-                        SharedPreferencesUtils.setComicInfoList(ComicItemActivity.this,comicInfoList);
-                        collectImage.setImageResource(R.drawable.ic_is_collect);
-                        collectText.setText("已收藏");
-                        Toast toast = Toast.makeText(ComicItemActivity.this,"",Toast.LENGTH_SHORT);
-                        toast.setText("我来啦~");
-                        toast.show();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        //收藏状态在onResume中初始化
+        collectButton.setOnClickListener(new OnCollectButtonClickListener(this,comicInfo,collectImage,collectText));
 
         Runnable getDataThread = new Runnable() {
             @Override
@@ -228,6 +168,7 @@ public class ComicItemActivity extends AppCompatActivity {
                                     @Override
                                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                                         Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
+                                        intent.putExtra("comicInfo",comicInfo);
                                         intent.putExtra("comicTab",tab);
                                         intent.putExtra("position",i);
                                         startActivity(intent);
@@ -244,7 +185,11 @@ public class ComicItemActivity extends AppCompatActivity {
                 }
             }
         };
-        MainActivity.executor.execute(getDataThread);
+        executor.execute(getDataThread);
+    }
+
+    public ExecutorService getExecutor() {
+        return executor;
     }
 
     @Override
@@ -255,5 +200,39 @@ public class ComicItemActivity extends AppCompatActivity {
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //初始化收藏状态
+        try {
+            List<ComicInfo> comicInfoList = SharedPreferencesUtils.getComicInfoList(this);
+            if(comicInfoList != null){
+                for(int i = 0;i < comicInfoList.size();i++){
+                    if(comicInfoList.get(i).getHref().equals(comicInfo.getHref())){
+                        collectImage.setImageResource(R.drawable.ic_is_collect);
+                        collectText.setText("已收藏");
+                        break;
+                    }
+                    else if(i == comicInfoList.size() - 1){
+                        collectImage.setImageResource(R.drawable.ic_not_collect);
+                        collectText.setText("收藏");
+                    }
+                }
+            }
+            else {
+                collectImage.setImageResource(R.drawable.ic_not_collect);
+                collectText.setText("收藏");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 }
