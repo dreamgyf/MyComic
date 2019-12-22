@@ -31,6 +31,7 @@ import com.dreamgyf.mycomic.entity.ComicInfo;
 import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.entity.Section;
 import com.dreamgyf.mycomic.listener.OnCollectButtonClickListener;
+import com.dreamgyf.mycomic.utils.Pair;
 import com.dreamgyf.mycomic.utils.SharedPreferencesUtils;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -52,7 +53,9 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -102,6 +105,16 @@ public class ComicContentActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewpager);
 
         initBottomDialog();
+        //保存历史记录
+        try {
+            Map<String, Pair<ComicTab, Integer>> history = SharedPreferencesUtils.getHistory(this);
+            if(history == null)
+                history = new HashMap<>();
+            history.put(comicInfo.getHref(),new Pair<ComicTab, Integer>(comicTab, position));
+            SharedPreferencesUtils.setHistory(this,history);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //获取数据
         Runnable getDataThread = new Runnable() {
             @Override

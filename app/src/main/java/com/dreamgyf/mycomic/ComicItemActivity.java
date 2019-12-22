@@ -29,6 +29,7 @@ import com.dreamgyf.mycomic.entity.ComicTab;
 import com.dreamgyf.mycomic.entity.Section;
 import com.dreamgyf.mycomic.listener.OnCollectButtonClickListener;
 import com.dreamgyf.mycomic.utils.BeanUtils;
+import com.dreamgyf.mycomic.utils.Pair;
 import com.dreamgyf.mycomic.utils.SharedPreferencesUtils;
 import com.google.android.material.tabs.TabLayout;
 
@@ -47,6 +48,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -78,6 +80,8 @@ public class ComicItemActivity extends AppCompatActivity {
 
     private TextView collectText;
 
+    private Button historyButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,6 +93,7 @@ public class ComicItemActivity extends AppCompatActivity {
         collectButton = findViewById(R.id.collect_button);
         collectImage = findViewById(R.id.collect_image);
         collectText = findViewById(R.id.collect_text);
+        historyButton = findViewById(R.id.history_button);
 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -132,7 +137,7 @@ public class ComicItemActivity extends AppCompatActivity {
                     final String description = document.getElementsByClass("comic_story").text();
                     comic.setDescription(description);
                     Elements tabs = document.getElementById("myTab").getElementsByTag("a");
-                    List<ComicTab> comicTabList = new ArrayList<>();
+                    final List<ComicTab> comicTabList = new ArrayList<>();
                     for(Element tab : tabs){
                         ComicTab comicTab = new ComicTab();
                         comicTab.setId(tab.attr("aria-controls"));
@@ -180,6 +185,17 @@ public class ComicItemActivity extends AppCompatActivity {
                             }
                             tabLayout.setupWithViewPager(viewPager);
                             viewPager.setAdapter(new TabViewPagerAdapter(titleList, viewList));
+                            //开始阅读
+                            historyButton.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
+                                    intent.putExtra("comicInfo",comicInfo);
+                                    intent.putExtra("comicTab",comicTabList.get(0));
+                                    intent.putExtra("position",0);
+                                    startActivity(intent);
+                                }
+                            });
                         }
                     });
                 }
@@ -224,6 +240,29 @@ public class ComicItemActivity extends AppCompatActivity {
             else {
                 collectImage.setImageResource(R.drawable.ic_not_collect);
                 collectText.setText("收藏");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //设置历史记录
+        try {
+            Map<String, Pair<ComicTab, Integer>> history = SharedPreferencesUtils.getHistory(this);
+            if(history != null){
+                for(final Map.Entry<String, Pair<ComicTab, Integer>> entry : history.entrySet()){
+                    if(entry.getKey().equals(comicInfo.getHref())){
+                        historyButton.setText("继续阅读 " + entry.getValue().first.getSections().get(entry.getValue().second).getName());
+                        historyButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
+                                intent.putExtra("comicInfo",comicInfo);
+                                intent.putExtra("comicTab",entry.getValue().first);
+                                intent.putExtra("position",entry.getValue().second);
+                                startActivity(intent);
+                            }
+                        });
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
