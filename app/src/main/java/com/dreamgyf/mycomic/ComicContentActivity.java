@@ -196,27 +196,33 @@ public class ComicContentActivity extends AppCompatActivity {
                         Runnable getImgThread = new Runnable() {
                             @Override
                             public void run() {
-                                try {
-                                    URL url = new URL(headUrl + "/" + comicContentList.get(pos).getImg());
-                                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-                                    httpURLConnection.setRequestMethod("GET");
-                                    if(httpURLConnection.getResponseCode() == 200){
-                                        InputStream in = httpURLConnection.getInputStream();
-                                        final Bitmap bitmap = BitmapFactory.decodeStream(in);
-                                        handler.post(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                ImageView imageView = viewList.get(pos).findViewById(R.id.image);
-                                                imageView.setScaleType(ImageView.ScaleType.MATRIX);
-                                                imageView.setImageBitmap(bitmap);
-                                                ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
-                                                layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels;
+                                boolean success = false;
+                                while(!success){
+                                    try {
+                                        URL url = new URL(headUrl + "/" + comicContentList.get(pos).getImg());
+                                        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                                        httpURLConnection.setRequestMethod("GET");
+                                        if(httpURLConnection.getResponseCode() == 200){
+                                            InputStream in = httpURLConnection.getInputStream();
+                                            final Bitmap bitmap = BitmapFactory.decodeStream(in);
+                                            if(bitmap != null){
+                                                success = true;
+                                                handler.post(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        ImageView imageView = viewList.get(pos).findViewById(R.id.image);
+                                                        imageView.setScaleType(ImageView.ScaleType.MATRIX);
+                                                        imageView.setImageBitmap(bitmap);
+                                                        ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
+                                                        layoutParams.width = ComicContentActivity.this.getResources().getDisplayMetrics().widthPixels;
+                                                    }
+                                                });
                                             }
-                                        });
+                                        }
                                         httpURLConnection.disconnect();
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
                                     }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
                                 }
                             }
                         };
