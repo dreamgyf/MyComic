@@ -173,15 +173,15 @@ public class ComicContentActivity extends AppCompatActivity {
                                 viewList.add(view);
                             }
                             viewPager.setAdapter(new ComicContentViewPagerAdapter(viewList));
+                            seekBar.setMax(comicContentList.size() - 1);
                             viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
                                 @Override
                                 public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                                    seekBar.setProgress((int)((double) position / (double) viewList.size() * 100.0));
                                 }
 
                                 @Override
                                 public void onPageSelected(int position) {
-                                    seekBar.setProgress((int)((double) position / (double) viewList.size() * 100.0));
+                                    seekBar.setProgress(position);
                                 }
 
                                 @Override
@@ -311,7 +311,7 @@ public class ComicContentActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 if(b)
-                    viewPager.setCurrentItem((int)((double)i / 100.0 * (double) viewList.size()));
+                    viewPager.setCurrentItem(i);
             }
 
             @Override
