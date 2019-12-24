@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".SearchActivity"></activity>
-        <activity android:name=".ComicContentActivity" />
+        <activity android:name=".ComicContentActivity" android:launchMode="singleInstance"/>
         <activity android:name=".ComicItemActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>

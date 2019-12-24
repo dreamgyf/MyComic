@@ -25,13 +25,13 @@ public class SharedPreferencesUtils {
         editor.apply();
     }
 
-    public static Map<String, Pair<ComicTab, Integer>> getHistory(Context context) throws Exception {
+    public static Map<String, Map<String, Object>> getHistory(Context context) throws Exception {
         SharedPreferences sharedPreferences = context.getSharedPreferences("comic",Context.MODE_PRIVATE);
         String collectListBase64 = sharedPreferences.getString("history",null);
         return collectListBase64 != null ? BeanUtils.decodeBean(collectListBase64, HashMap.class) : null;
     }
 
-    public static void setHistory(Context context,Map<String, Pair<ComicTab, Integer>> history) throws Exception {
+    public static void setHistory(Context context,Map<String, Map<String, Object>> history) throws Exception {
         SharedPreferences sharedPreferences = context.getSharedPreferences("comic", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("history", BeanUtils.encodeBean(history));

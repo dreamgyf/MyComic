@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Base64;
 import android.util.JsonReader;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,6 +74,8 @@ public class ComicContentActivity extends AppCompatActivity {
 
     private int position;
 
+    private int page;
+
     private List<ComicContent> comicContentList;
 
     private ViewPager viewPager;
@@ -102,19 +105,10 @@ public class ComicContentActivity extends AppCompatActivity {
         comicTab = (ComicTab) getIntent().getSerializableExtra("comicTab");
         position = getIntent().getIntExtra("position",-1);
         section = position == -1 ? null : comicTab.getSections().get(position);
+        page = getIntent().getIntExtra("page",0);
         viewPager = findViewById(R.id.viewpager);
 
         initBottomDialog();
-        //保存历史记录
-        try {
-            Map<String, Pair<ComicTab, Integer>> history = SharedPreferencesUtils.getHistory(this);
-            if(history == null)
-                history = new HashMap<>();
-            history.put(comicInfo.getHref(),new Pair<ComicTab, Integer>(comicTab, position));
-            SharedPreferencesUtils.setHistory(this,history);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         //获取数据
         Runnable getDataThread = new Runnable() {
             @Override
@@ -189,6 +183,7 @@ public class ComicContentActivity extends AppCompatActivity {
 
                                 }
                             });
+                            viewPager.setCurrentItem(page,false);
                         }
                     });
                     for(int i = 0;i < comicContentList.size();i++){
@@ -335,9 +330,30 @@ public class ComicContentActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        if(isFinishing()) {
+            //保存历史记录
+            try {
+                Map<String, Map<String, Object>> history = SharedPreferencesUtils.getHistory(this);
+                if(history == null)
+                    history = new HashMap<>();
+                Map<String, Object> map = new HashMap<>();
+                map.put("comicTab",comicTab);
+                map.put("position",position);
+                map.put("page",viewPager.getCurrentItem());
+                history.put(comicInfo.getHref(),map);
+                SharedPreferencesUtils.setHistory(this,history);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
         dialog.dismiss();
-        super.onDestroy();
         executor.shutdownNow();
+        super.onDestroy();
     }
 }

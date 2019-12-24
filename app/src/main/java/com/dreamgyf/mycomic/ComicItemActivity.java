@@ -236,19 +236,23 @@ public class ComicItemActivity extends AppCompatActivity {
         }
         //设置历史记录
         try {
-            Map<String, Pair<ComicTab, Integer>> history = SharedPreferencesUtils.getHistory(this);
+            Map<String, Map<String, Object>> history = SharedPreferencesUtils.getHistory(this);
             boolean hasHistory = false;
             if(history != null){
-                for(final Map.Entry<String, Pair<ComicTab, Integer>> entry : history.entrySet()){
+                for(final Map.Entry<String, Map<String, Object>> entry : history.entrySet()){
                     if(entry.getKey().equals(comicInfo.getHref())){
-                        historyButton.setText("继续阅读 " + entry.getValue().first.getSections().get(entry.getValue().second).getName());
+                        final ComicTab comicTab = (ComicTab) entry.getValue().get("comicTab");
+                        final int position = (Integer) entry.getValue().get("position");
+                        final int page = (Integer) entry.getValue().get("page");
+                        historyButton.setText("继续阅读 " + comicTab.getSections().get(position).getName());
                         historyButton.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 Intent intent = new Intent(ComicItemActivity.this,ComicContentActivity.class);
                                 intent.putExtra("comicInfo",comicInfo);
-                                intent.putExtra("comicTab",entry.getValue().first);
-                                intent.putExtra("position",entry.getValue().second);
+                                intent.putExtra("comicTab",comicTab);
+                                intent.putExtra("position",position);
+                                intent.putExtra("page",page);
                                 startActivity(intent);
                             }
                         });
