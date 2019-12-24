@@ -331,21 +331,19 @@ public class ComicContentActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        if(isFinishing()) {
-            //保存历史记录
-            try {
-                Map<String, Map<String, Object>> history = SharedPreferencesUtils.getHistory(this);
-                if(history == null)
-                    history = new HashMap<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put("comicTab",comicTab);
-                map.put("position",position);
-                map.put("page",viewPager.getCurrentItem());
-                history.put(comicInfo.getHref(),map);
-                SharedPreferencesUtils.setHistory(this,history);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        //保存历史记录
+        try {
+            Map<String, Map<String, Object>> history = SharedPreferencesUtils.getHistory(this);
+            if(history == null)
+                history = new HashMap<>();
+            Map<String, Object> map = new HashMap<>();
+            map.put("comicTab",comicTab);
+            map.put("position",position);
+            map.put("page",viewPager.getCurrentItem());
+            history.put(comicInfo.getHref(),map);
+            SharedPreferencesUtils.setHistory(this,history);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         super.onPause();
     }
